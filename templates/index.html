@@ -1,0 +1,37 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Classification</title>
+</head>
+<body>
+    <h1>Image Classification using MobileNetV2</h1>
+
+    <!-- Image upload form -->
+    <form action="/" method="POST" enctype="multipart/form-data">
+        <label for="image">Upload an image:</label>
+        <input type="file" name="image" required>
+        <button type="submit">Classify</button>
+    </form>
+
+    {% if predictions %}
+        <h2>Predictions:</h2>
+        <p>Image Path: <img src="{{ image_path }}" width="300" height="300"></p>
+        <ul>
+            {% for prediction in predictions %}
+                <li>
+                  {{ prediction['label'] }} -
+                  {% if prediction['probability'] is defined and prediction['probability'] is not none %}
+                    {{ prediction['probability']|round(2) }}%
+                  {% else %}
+                    N/A
+                  {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+</body>
+</html>
+

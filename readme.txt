@@ -1,0 +1,1 @@
+-> This model made by debabrata hira, predicts using a pre trained-deep learning model which is MobileNet that has been trained on a large scale dataset Imagenet. 

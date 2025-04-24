@@ -1,62 +1,47 @@
 import tensorflow as tf
+from tensorflow.keras import layers, models
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras.applications import MobileNetV2
-from tensorflow.keras.layers import Dense, GlobalAveragePooling2D
-from tensorflow.keras.models import Model
-from tensorflow.keras.optimizers import Adam
 
-# Set paths for your datasets
-train_dir = '/home/snifade/Project/image_classification_project'
+train_dir = '/home/snifade/Project/image_classification_project/friends_animals_datasets'
 
-# Set image size and batch size
-IMG_SIZE = 224
-BATCH_SIZE = 32
+# Data preparation
+datagen = ImageDataGenerator(rescale=1./255, validation_split=0.2)
 
-# Data Preprocessing using ImageDataGenerator
-train_datagen = ImageDataGenerator(
-    rescale=1.0/255.0,
-    rotation_range=20,
-    width_shift_range=0.2,
-    height_shift_range=0.2,
-    shear_range=0.2,
-    zoom_range=0.2,
-    horizontal_flip=True,
-    fill_mode='nearest'
+train_gen = datagen.flow_from_directory(train_dir,
+    target_size=(224, 224),
+    batch_size=16,
+    class_mode='categorical',
+    subset='training'
 )
 
-train_generator = train_datagen.flow_from_directory(
-    train_dir,
-    target_size=(IMG_SIZE, IMG_SIZE),
-    batch_size=BATCH_SIZE,
-    class_mode='categorical'
+val_gen = datagen.flow_from_directory(train_dir,
+    target_size=(224, 224),
+    batch_size=16,
+    class_mode='categorical',
+    subset='validation'
 )
 
-# Load the MobileNetV2 model with pre-trained weights, excluding the top classification layer
-base_model = MobileNetV2(weights='imagenet', include_top=False, input_shape=(IMG_SIZE, IMG_SIZE, 3))
-
-# Freeze the base model layers
+# Build model
+base_model = tf.keras.applications.MobileNetV2(include_top=False, input_shape=(224, 224, 3), weights='imagenet')
 base_model.trainable = False
 
-# Add a custom classifier on top of MobileNetV2
-x = base_model.output
-x = GlobalAveragePooling2D()(x)
-x = Dense(1024, activation='relu')(x)
-x = Dense(train_generator.num_classes, activation='softmax')(x)  # Number of classes = friends + animals
+model = models.Sequential([
+    base_model,
+    layers.GlobalAveragePooling2D(),
+    layers.Dense(128, activation='relu'),
+    layers.Dense(2, activation='softmax')  # 🚨 MUST match class count
+])
 
-# Define the model
-model = Model(inputs=base_model.input, outputs=x)
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
-# Compile the model
-model.compile(optimizer=Adam(), loss='categorical_crossentropy', metrics=['accuracy'])
+# Train model
+model.fit(train_gen, validation_data=val_gen, epochs=5)
 
-# Train the model
-model.fit(train_generator, epochs=10, steps_per_epoch=train_generator.samples // BATCH_SIZE)
-
-# Save the trained model
+# Save model
 model.save('friends_animals_face_model.keras')
 
-print("Model training completed and saved as 'friends_animals_face_model.h5'")
+# Save class indices
+import json
+with open('class_indices.json', 'w') as f:
+    json.dump(train_gen.class_indices, f)
 
-print("Number of classes:", train_generator.num_classes)
-
-model.summary()

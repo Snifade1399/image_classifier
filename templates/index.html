@@ -1,10 +1,26 @@
-<!-- templates/index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Image Classification</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
     <h1>Image Classification using MobileNetV2</h1>
@@ -12,26 +28,31 @@
     <!-- Image upload form -->
     <form action="/" method="POST" enctype="multipart/form-data">
         <label for="image">Upload an image:</label>
-        <input type="file" name="image" required>
+        <input type="file" id="image" name="image" required>
         <button type="submit">Classify</button>
     </form>
 
+    <!-- Display error messages -->
+    {% if error %}
+        <div class="error">
+            <strong>Error:</strong> {{ error }}
+        </div>
+    {% endif %}
+
+    <!-- Display predictions -->
     {% if predictions %}
         <h2>Predictions:</h2>
-        <p>Image Path: <img src="{{ image_path }}" width="300" height="300"></p>
+        <p>Image:</p>
+        {% if image_path %}
+            <img src="{{ image_path }}" width="300" height="300">
+        {% else %}
+            <p>No image uploaded.</p>
+        {% endif %}
         <ul>
-            {% for prediction in predictions %}
-                <li>
-                  {{ prediction['label'] }} -
-                  {% if prediction['probability'] is defined and prediction['probability'] is not none %}
-                    {{ prediction['probability']|round(2) }}%
-                  {% else %}
-                    N/A
-                  {% endif %}
-                </li>
+            {% for _, label, probability in predictions %}
+                <li>{{ label }} - {{ (probability * 100) | round(2) }}%</li>
             {% endfor %}
         </ul>
     {% endif %}
 </body>
 </html>
-
